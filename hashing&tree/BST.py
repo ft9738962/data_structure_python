@@ -85,6 +85,11 @@ class BinarySearchTree:
             else:
                 currentNode.parent.rightChild = None
         
+        elif currentNode.hasBothChildren(): #被删节点有两个子节点
+            succ = currentNode.findSuccessor() #寻找继承节点
+            succ.spliceOut() #把继承节点的相关节点断开重连
+            currentNode.key = succ.key
+            currentNode.payload = succ.payload
         
         else: #被删节点有一个子节点
             if currentNode.hasLeftChild: #被删节点的子节点在左侧
@@ -122,6 +127,7 @@ class TreeNode:
         self.leftChild = left
         self.rightChild = right
         self.parent = parent
+        self.balanceFactor = 0
 
     def hasLeftChild(self):
         return self.leftChild
@@ -139,7 +145,7 @@ class TreeNode:
         return self.parent and self.parent.leftChild == self
     
     def isRightChild(self):
-        return self.parent and self.parent.RightChild == self
+        return self.parent and self.parent.rightChild == self
 
     def hasAnyChildren(self):
         return self.rightChild or self.leftChild
@@ -169,3 +175,124 @@ class TreeNode:
             if self.hasRightChild():
                 for elem in self.rightChild:
                     yield elem
+
+    def findSuccessor(self):
+        succ = None
+        if self.hasRightChild():
+            succ = self.rightChild.findMin() #找右子树的最小节点
+        else:
+            if self.parent:
+                if self.isLeftChild():
+                    succ = self.parent
+                else:
+                    self.parent.righttChild = None
+                    succ = self.parent.findSuccessor()
+                    self.parent.rightChild = self
+        return succ
+
+    def findMin(self):
+        current = self
+        while current.hasLeftChild():
+            current = current.leftChild
+        return current
+
+    def spliceOut(self): #把找到的继承节点摘出来
+        if self.isLeaf(): #如果是叶节点
+            if self.isLeftChild():
+                self.parent.leftChild = None
+            else:
+                self.parent.rightChild = None
+        elif self.hasAnyChildren(): #
+            if self.hasLeftChild():
+                if self.isLeftChild():
+                    self.parent.leftChild = self.leftChild
+                else:
+                    self.parent.rightChild = self.leftChild
+                self.leftChild.parent = self.parent
+            else:
+                if self.isLeftChild():
+                    self.parent.leftChild = self.rightChild
+                else:
+                    self.parent.rightChild = self.rightChild
+                self.rightChild.parent = self.parent
+
+class AVLTree(BinarySearchTree):
+    def _put(self, key, val, currentNode):
+        if key < currentNode.key:
+            if currentNode.hasLeftChild():
+                self._put(key, val, currentNode.leftChild)
+            else:
+                currentNode.leftChild = TreeNode(key, val, parent=currentNode)
+                self.updateBalance(currentNode.leftChild)
+        else: 
+            if currentNode.hasRightChild():
+                self._put(key, val, currentNode.rightChild)
+            else:
+                currentNode.rightChild = TreeNode(key, val, parent=currentNode)
+                self.updateBalance(currentNode.rightChild)
+
+    def updateBalance(self, node):
+        if node.balanceFactor > 1 or node.balanceFactor < -1:
+            self.rebalance(node)
+            return
+        if node.parent != None:
+            if node.isLeftChild():
+                node.parent.balanceFactor += 1
+            elif node.isRightChild():
+                node.parent.balanceFactor -= 1
+            if node.parent.balanceFactor != 0: #平衡后父节点平衡因子不为0
+                self.updateBalance(node.parent) #递归向上调整父节点
+
+    def rebalance(self, node):
+        if node.balanceFactor < 0:
+            if node.rightChild.balanceFactor > 0: #节点右重，子节点左重时
+                self.rotateRight(node.rightChild) #先右旋子节点
+                self.rotateLeft(node) #再左旋节点
+            else: #节点右重，子节点没有左重
+                self.rotateLeft(node)
+        elif node.balanceFactor > 0:
+            if node.leftChild.balanceFactor < 0:
+                self.rotateLeft(node.leftChild)
+                self.rotateRight(node)
+            else:
+                self.rotateRight(node)
+
+    def rotateLeft(self, rotRoot): #左旋，旧节点命名为rotRoot
+        newRoot = rotRoot.rightChild
+        rotRoot.rightChild = newRoot.leftChild #新根左节点放到旧根右节点
+        if newRoot.leftChild != None:
+            newRoot.leftChild.parent = rotRoot
+        newRoot.parent = rotRoot.parent
+        if rotRoot.isRoot(): #如果旧节点是根节点
+            self.root = newRoot #将新节点设为根节点
+        else:
+            if rotRoot.isLeftChild():
+                rotRoot.parent.leftChild = newRoot
+            else:
+                rotRoot.parent.rightChild = newRoot
+        newRoot.leftChild = rotRoot #旧根节点设为新根节点的左子节点
+        rotRoot.parent = newRoot
+        rotRoot.balanceFactor = rotRoot.balanceFactor + \
+            1 - min(newRoot.balanceFactor, 0)
+        newRoot.balanceFactor = newRoot.balanceFactor + \
+            1 + max(rotRoot.balanceFactor, 0)
+
+    def rotateRight(self, rotRoot): #右旋，旧节点命名为rotRoot
+        newRoot = rotRoot.leftChild
+        rotRoot.rightChild = newRoot.rightChild #新根右节点放到旧根左节点
+        if newRoot.rightChild != None:
+            newRoot.rightChild.parent = rotRoot
+        newRoot.parent = rotRoot.parent
+        if rotRoot.isRoot(): #如果旧节点是根节点
+            self.root = newRoot #将新节点设为根节点
+        else:
+            if rotRoot.isLeftChild():
+                rotRoot.parent.leftChild = newRoot
+            else:
+                rotRoot.parent.rightChild = newRoot
+        newRoot.rightChild = rotRoot #旧根节点设为新根节点的左子节点
+        rotRoot.parent = newRoot
+        rotRoot.balanceFactor = rotRoot.balanceFactor - \
+            1 + min(newRoot.balanceFactor, 0)
+        newRoot.balanceFactor = newRoot.balanceFactor - \
+            1 - max(rotRoot.balanceFactor, 0)
