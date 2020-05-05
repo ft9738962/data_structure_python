@@ -113,3 +113,55 @@ a = eval(input())
 b = mirror_flip(a)
 c = inorder_parse(b, 1)
 print(' '.join(c))
+
+"""
+Extend the buildParseTree function to handle mathematical expressions that do not have spaces between every character.
+"""
+from ..hashing_and_tree.basic_tree import BinaryTree2
+from ..linear_structure.stack import Stack
+
+#改写二叉解析树
+def buildParseTree(fpexp):
+    pStack = Stack()
+    eTree = BinaryTree2('')
+    pStack.push(eTree)
+    currentTree = eTree
+    for i in range(len(fpexp)):
+        if fpexp[i] == '(':
+            currentTree.insertLeft('')
+            pStack.push(currentTree) #下降前将节点推入栈
+            currentTree = currentTree.getLeftChild() #将当前节点设为子节点
+        elif fpexp[i] not in ['+', '-', '*', '/', ')']:
+            currentTree.setRootVal(int(fpexp[i]))
+            parent = pStack.pop() #弹出父节点
+            currentTree = parent
+        elif fpexp[i] in ['+', '-', '*', '/']:
+            currentTree.setRootVal(fpexp[i])
+            currentTree.insertRight('')
+            pStack.push(currentTree)
+            currentTree = currentTree.getRightChild()
+        elif fpexp[i] == ')':
+            currentTree = pStack.pop() #出栈上升
+        else:
+            raise ValueError
+    return eTree
+
+#解析树
+import operator 
+def evaluate(parseTree):
+    opers = {'+': operator.add, '-': operator.sub, '*': operator.mul, '/': operator.truediv}
+
+    leftC = parseTree.getLeftChild()
+    rightC = parseTree.getRightChild()
+
+    if leftC and rightC:
+        fn = opers[parseTree.getRootVal()]
+        return fn(evaluate(leftC), evaluate(rightC))
+    else:
+        return parseTree.getRootVal()
+
+    #test
+gs = '( 5*(3+4))'
+pt = buildParseTree(gs)
+e = evaluate(pt)
+
