@@ -47,14 +47,14 @@ class BinHeap:
             self.perDown(1) #新顶下沉
             return retval
 
-#生成二叉树堆
-def buildHeap(self, alist):
-    i = len(alist) // 2 #从最后节点的父节点开始，因为叶节点是不需要去下沉的
-    self.currentSize = len(alist)
-    self.heapList = [0] + alist[:]
-    print(len(self.heapList), i)
-    while (i > 0):
+    #生成二叉树堆
+    def buildHeap(self, alist):
+        i = len(alist) // 2 #从最后节点的父节点开始，因为叶节点是不需要去下沉的
+        self.currentSize = len(alist)
+        self.heapList = [0] + alist[:]
+        print(len(self.heapList), i)
+        while (i > 0):
+            print(self.heapList, i)
+            self.percDown(i)
+            i = i - 1
         print(self.heapList, i)
-        self.percDown(i)
-        i = i - 1
-    print(self.heapList, i)
